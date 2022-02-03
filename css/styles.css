@@ -1,0 +1,10 @@
+html {
+	box-sizing: border-box;
+}
+
+.content-wrap {
+  max-width: 800px; /*width: 800px;*/
+  width: 85%; /*these two elements make the layout fluid*/
+  margin: 0 auto;
+  padding: 60px 0;
+}
