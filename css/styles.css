@@ -7,4 +7,5 @@ html {
   width: 85%; /*these two elements make the layout fluid*/
   margin: 0 auto;
   padding: 60px 0;
+  color: blue;
 }
