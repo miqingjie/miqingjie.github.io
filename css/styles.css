@@ -1,11 +1,14 @@
 html {
 	box-sizing: border-box;
 }
-
+header {
+  background: #2F3061;
+  color: #F7FFF7;
+  /* text-align: center; */
+}
 .content-wrap {
   max-width: 800px; /*width: 800px;*/
   width: 85%; /*these two elements make the layout fluid*/
   margin: 0 auto;
   padding: 60px 0;
-  color: blue;
 }
