@@ -109,8 +109,7 @@ header {
 /* Projects
 ------------------------------------*/
 .projects {
-  background: #6D8A96;
-	color: #F7FFF7;
+	background: #DEF7F6;
 }
 .projects  a {
   color: #2F3061;
@@ -139,7 +138,8 @@ header {
 /* Work Experience
 ------------------------------------*/
 .work-experience {
-  background: #DEF7F6;
+	background: #6D8A96;
+	color: #F7FFF7;
 }
 
 .job-details {
