@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Violin Ear Training Pro</title>
+
+<style>
+
+body{
+font-family:Arial;
+text-align:center;
+margin-top:20px;
+color:white;
+background-color:#2c6bed;
+
+background-image:
+linear-gradient(45deg, rgba(255,255,255,0.08) 25%, transparent 25%),
+linear-gradient(-45deg, rgba(255,255,255,0.08) 25%, transparent 25%),
+linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.08) 75%),
+linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.08) 75%);
+background-size:40px 40px;
+}
+
+/* Fingerboard */
+#fingerboard{
+width:700px;
+height:420px;
+margin:auto;
+background:linear-gradient(#5a3a1b,#3b2412);
+border-radius:10px;
+position:relative;
+box-shadow:0 10px 20px rgba(0,0,0,0.5);
+}
+
+/* Strings (G bottom → E top) */
+.string{
+position:absolute;
+width:100%;
+height:3px;
+background:silver;
+}
+
+.string:nth-child(1){top:320px;} /* G */
+.string:nth-child(2){top:240px;} /* D */
+.string:nth-child(3){top:160px;} /* A */
+.string:nth-child(4){top:80px;}  /* E */
+
+/* Finger tapes */
+.tape{
+position:absolute;
+top:0;
+height:100%;
+width:4px;
+background:rgba(255,255,255,0.4);
+z-index:1;
+transition:0.2s;
+}
+
+.t1 { left: 200px; }  /* 1st finger now at xPos[2] */
+.t2 { left: 320px; }  /* 2nd finger now at xPos[4] */
+.t3 { left: 380px; }  /* keep 3rd finger or adjust if needed */
+
+.tape.correct{ background:#00ff88; }
+.tape.wrong{ background:#ff4d4d; }
+
+/* Notes */
+.note{
+width:28px;
+height:28px;
+border-radius:50%;
+background:#ffd166;
+color:black;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:12px;
+font-weight:bold;
+position:absolute;
+transform:translate(-50%,-50%);
+cursor:pointer;
+transition:0.2s;
+z-index:2;
+}
+
+.note.active{
+background:#00ffcc;
+box-shadow:0 0 15px #00ffcc;
+transform:translate(-50%,-50%) scale(1.2);
+}
+
+button{
+padding:10px 15px;
+margin:5px;
+font-size:16px;
+}
+
+#stats{
+margin-top:10px;
+font-size:18px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h2>Violin Ear Training 🎻</h2>
+
+<button onclick="playReference()">Play C</button>
+<button onclick="playRandom()">Random Note</button>
+<button onclick="replay()">Replay</button>
+
+<div id="stats">
+Score: <span id="correct">0</span> /
+<span id="total">0</span> |
+Accuracy: <span id="accuracy">0</span>% |
+Streak: <span id="streak">0</span>
+</div>
+
+<div id="message"></div>
+
+<br>
+
+<div id="fingerboard">
+
+<div class="string"></div>
+<div class="string"></div>
+<div class="string"></div>
+<div class="string"></div>
+
+<div class="tape t1"></div>
+<div class="tape t2"></div>
+<div class="tape t3"></div>
+
+</div>
+
+<script>
+
+/* Frequencies */
+const notesFreq={
+"G3":196,"Ab3":207.65,"A3":220,"Bb3":233.08,"B3":246.94,"C4":261.63,"C#4":277.18,
+"D4":293.66,"Eb4":311.13,"E4":329.63,"F4":349.23,"F#4":369.99,"G4":392,"G#4":415.30,
+"A4":440,"Bb4":466.16,"B4":493.88,"C5":523.25,"C#5":554.37,"D5":587.33,"Eb5":622.25,
+"E5":659.25,"F5":698.46,"F#5":739.99,"G5":783.99,"G#5":830.61,"A5":880,"Bb5":932.33
+};
+
+let allNotes=[];
+let currentNote=null;
+let correct=0,total=0,streak=0;
+
+const audioContext=new (window.AudioContext||window.webkitAudioContext)();
+
+/* Violin sound */
+function playViolin(freq){
+
+const o1=audioContext.createOscillator();
+const o2=audioContext.createOscillator();
+const gain=audioContext.createGain();
+
+o1.type="sawtooth";
+o2.type="triangle";
+
+o1.frequency.value=freq;
+o2.frequency.value=freq*2;
+
+gain.gain.setValueAtTime(0,audioContext.currentTime);
+gain.gain.linearRampToValueAtTime(0.2,audioContext.currentTime+0.1);
+gain.gain.linearRampToValueAtTime(0,audioContext.currentTime+1);
+
+o1.connect(gain);
+o2.connect(gain);
+gain.connect(audioContext.destination);
+
+o1.start(); o2.start();
+o1.stop(audioContext.currentTime+1);
+o2.stop(audioContext.currentTime+1);
+
+}
+
+function playReference(){ playViolin(261.63); }
+
+function playRandom(){
+const r=Math.floor(Math.random()*allNotes.length);
+currentNote=allNotes[r];
+playViolin(notesFreq[currentNote]);
+document.getElementById("message").innerText="";
+resetTapes();
+}
+
+function replay(){
+if(currentNote) playViolin(notesFreq[currentNote]);
+}
+
+function guess(note){
+
+if(!currentNote) return;
+
+total++;
+
+let correctGuess = (note===currentNote);
+
+if(correctGuess){
+correct++; streak++;
+document.getElementById("message").innerText=" Good Job Rain!";
+}else{
+streak=0;
+document.getElementById("message").innerText="It was "+currentNote;
+}
+
+highlightTape(note, correctGuess);
+updateStats();
+
+}
+
+function updateStats(){
+document.getElementById("correct").innerText=correct;
+document.getElementById("total").innerText=total;
+document.getElementById("accuracy").innerText=
+total?Math.round((correct/total)*100):0;
+document.getElementById("streak").innerText=streak;
+}
+
+/* Tape logic */
+function highlightTape(note, isCorrect){
+
+resetTapes();
+
+const firstFinger=["A","E","B","F#"];
+const secondFinger=["B","F#","C#","G#"];
+const thirdFinger=["C","G","D","A"];
+
+let base = note.replace(/[0-9]/g,"");
+
+if(firstFinger.includes(base)){
+setTape("t1",isCorrect);
+}else if(secondFinger.includes(base)){
+setTape("t2",isCorrect);
+}else if(thirdFinger.includes(base)){
+setTape("t3",isCorrect);
+}
+
+}
+
+function setTape(cls,isCorrect){
+const tape=document.querySelector("."+cls);
+tape.classList.add(isCorrect?"correct":"wrong");
+setTimeout(()=>tape.classList.remove("correct","wrong"),400);
+}
+
+function resetTapes(){
+document.querySelectorAll(".tape").forEach(t=>{
+t.classList.remove("correct","wrong");
+});
+}
+
+/* Create notes */
+function createNotes(){
+
+const board=document.getElementById("fingerboard");
+
+const xPos=[50,140,200,260,320,380,440];
+
+const strings=[
+
+["G3","Ab3","A3","Bb3","B3","C4","C#4"],
+["D4","Eb4","E4","F4","F#4","G4","G#4"],
+["A4","Bb4","B4","C5","C#5","D5","Eb5"],
+["E5","F5","F#5","G5","G#5","A5","Bb5"]
+
+];
+
+strings.forEach((stringNotes,i)=>{
+
+stringNotes.forEach((note,j)=>{
+
+const dot=document.createElement("div");
+dot.className="note";
+dot.innerText=note.replace(/[0-9]/g,"");
+
+dot.style.left=xPos[j]+"px";
+dot.style.top=(320 - i*80)+"px";
+
+dot.onclick=()=>{
+playViolin(notesFreq[note]);
+guess(note);
+
+dot.classList.add("active");
+setTimeout(()=>dot.classList.remove("active"),200);
+};
+
+board.appendChild(dot);
+
+if(!allNotes.includes(note)) allNotes.push(note);
+
+});
+
+});
+
+}
+
+createNotes();
+
+</script>
+
+</body>
+</html>
